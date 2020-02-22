@@ -50,8 +50,15 @@
                 o.mask_vertex = UnityObjectToClipPos(v.mask_vertex);
                 float4 world_vertex = mul(unity_ObjectToWorld, v.mask_vertex);
                 o.mask_uv = TRANSFORM_TEX(v.mask_uv, _MaskTex);
-                o.masked_uv = ((_MaskedTexPosition - world_vertex) / _MaskedTexSize);
-                o.masked_uv.x = -o.masked_uv.x;
+                o.masked_uv = abs((_MaskedTexPosition - world_vertex) / _MaskedTexSize);
+                if (_MaskedTexPosition.x > world_vertex.x)
+                {
+                    o.masked_uv.x = -o.masked_uv.x;
+                }
+                if (_MaskedTexPosition.y > world_vertex.y)
+                {
+                    o.masked_uv.y = -o.masked_uv.y;
+                }
                 return o;
             }
 
@@ -59,11 +66,19 @@
             {
                 float4 col = tex2D(_MaskedTex, i.masked_uv);
                 float4 mask = tex2D(_MaskTex, i.mask_uv);
+
                 #ifndef FLIP_MASK
                     col.a = mask.r;
                 #else
                     col.a = 1 - mask.r;
                 #endif
+
+                if (i.masked_uv.x < 0 || i.masked_uv.x > 1 ||
+                    i.masked_uv.y < 0 || i.masked_uv.y > 1)
+                {
+                    discard;
+                }
+
                 return col;
             }
             ENDCG
